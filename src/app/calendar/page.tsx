@@ -77,13 +77,13 @@ export default function CalendarPage() {
         if (logsError) throw logsError;
         
         // Cast the data to our expected type
-        const typedLogs = (logsData || []).map(log => ({
+        const typedLogs = ((logsData || []) as unknown as SupabaseLog[]).map(log => ({
           id: log.id,
           project_id: log.project_id,
           content: log.content,
           created_at: log.created_at,
           project: {
-            title: log.project.title || 'Untitled Project'
+            title: log.project?.title || 'Untitled Project'
           }
         }));
         
