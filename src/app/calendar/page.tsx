@@ -88,7 +88,7 @@ export default function CalendarPage() {
         }));
         
         setLogs(typedLogs);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching logs:', err);
         setError(err.message);
       } finally {

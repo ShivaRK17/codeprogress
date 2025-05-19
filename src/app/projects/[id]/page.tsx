@@ -61,7 +61,7 @@ export default function ProjectDetailPage() {
 
         if (logsError) throw logsError;
         setLogs(logsData || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching project:', err);
         setError(err.message);
       } finally {
@@ -93,7 +93,7 @@ export default function ProjectDetailPage() {
 
       setLogs([data, ...logs]);
       setNewLog('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding log:', err);
       setError(err.message);
     }
@@ -111,7 +111,7 @@ export default function ProjectDetailPage() {
       if (error) throw error;
 
       setLogs(logs.filter(log => log.id !== logId));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting log:', err);
       setError(err.message);
     }
