@@ -1,103 +1,278 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
+import Link from 'next/link';
+import { Plus, Calendar, ArrowRight, Trash2, Edit2 } from 'lucide-react';
+
+interface Project {
+  id: string;
+  title: string;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    full_name: string;
+  };
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [newProjectTitle, setNewProjectTitle] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    console.log('Current user:', user);
+    fetchProjects();
+  }, [user]);
+
+  async function fetchProjects() {
+    try {
+      setError(null);
+      console.log('Fetching projects...');
+      
+      // First, test the connection
+      const { data: testData, error: testError } = await supabase
+        .from('projects')
+        .select('count');
+      
+      if (testError) {
+        console.error('Connection test failed:', testError);
+        setError(`Connection test failed: ${testError.message}`);
+        return;
+      }
+      
+      console.log('Connection test successful:', testData);
+
+      // Now fetch the actual projects
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          profiles!inner(id, full_name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching projects:', error);
+        setError(`Error fetching projects: ${error.message}`);
+        return;
+      }
+      
+      if (!data) {
+        console.log('No projects found');
+        setProjects([]);
+        return;
+      }
+
+      console.log('Fetched projects:', data);
+      setProjects(data);
+    } catch (err) {
+      console.error('Unexpected error fetching projects:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    }
+  }
+
+  async function createProject() {
+    if (!newProjectTitle.trim() || !user) return;
+    
+    setIsCreating(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([{ 
+          title: newProjectTitle,
+          user_id: user.id
+        }])
+        .select(`
+          *,
+          profiles!inner(id, full_name)
+        `);
+
+      if (error) {
+        console.error('Error creating project:', error);
+        setError(`Error creating project: ${error.message}`);
+      } else {
+        setProjects([...(data || []), ...projects]);
+        setNewProjectTitle('');
+      }
+    } catch (err) {
+      console.error('Unexpected error creating project:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  async function deleteProject(projectId: string) {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (error) {
+      console.error('Error deleting project:', error);
+    } else {
+      setProjects(projects.filter(p => p.id !== projectId));
+    }
+  }
+
+  async function updateProject(projectId: string) {
+    if (!editTitle.trim()) return;
+
+    const { error } = await supabase
+      .from('projects')
+      .update({ title: editTitle })
+      .eq('id', projectId);
+
+    if (error) {
+      console.error('Error updating project:', error);
+    } else {
+      setProjects(projects.map(p => 
+        p.id === projectId ? { ...p, title: editTitle } : p
+      ));
+      setEditingProject(null);
+      setEditTitle('');
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-white border-b">
+        <div className="max-w-4xl mx-auto px-4 py-16">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Track Your Coding Journey
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Create projects, log your progress, and watch your coding skills grow.
+          </p>
+          
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
+              {error}
+            </div>
+          )}
+          
+          {user ? (
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={newProjectTitle}
+                onChange={(e) => setNewProjectTitle(e.target.value)}
+                placeholder="Enter project name"
+                className="flex-1 border text-black border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                onClick={createProject}
+                disabled={isCreating}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <Plus className="w-5 h-5" />
+                {isCreating ? 'Creating...' : 'Create Project'}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <Link
+                href="/auth"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Sign in to create projects
+              </Link>
+            </div>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+
+      {/* Projects List */}
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          All Projects
+        </h2>
+        
+        {projects.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg border border-dashed">
+            <p className="text-gray-500">No projects yet. Create your first project above!</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {projects.map((project) => (
+              <div key={project.id} className="bg-white rounded-lg border hover:border-blue-500 transition-colors group">
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    {editingProject?.id === project.id ? (
+                      <div className="flex-1 mr-4">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full border text-blue-800 border-gray-200 rounded px-2 py-1"
+                          autoFocus
+                        />
+                      </div>
+                    ) : (
+                      <Link href={`/project/${project.id}`} className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {project.title}
+                        </h3>
+                      </Link>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {user?.id === project.user_id && (
+                        <>
+                          {editingProject?.id === project.id ? (
+                            <button
+                              onClick={() => updateProject(project.id)}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              Save
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingProject(project);
+                                setEditTitle(project.title);
+                              }}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => deleteProject(project.id)}
+                            className="text-gray-400 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                      <Link href={`/project/${project.id}`}>
+                        <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500 mt-4">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <time dateTime={project.created_at}>
+                      Created {new Date(project.created_at).toLocaleDateString()}
+                    </time>
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500">
+                    By {project.profiles?.full_name || 'Anonymous'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Coding Progress Tracker
 
-## Getting Started
+A Next.js + Supabase app to track your coding progress. This app allows you to create coding projects and log your daily progress for each project.
 
-First, run the development server:
+## Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Home Page**: Lists all your projects and provides a form to create a new project.
+- **Project Detail Page**: Displays all progress logs for a selected project and allows you to add new logs.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js, React, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Supabase Schema
 
-## Learn More
+### Tables
 
-To learn more about Next.js, take a look at the following resources:
+1. **projects**
+   - `id` (UUID, primary key)
+   - `title` (text)
+   - `created_at` (timestamp)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **progress_logs**
+   - `id` (UUID, primary key)
+   - `project_id` (UUID, foreign key referencing `projects.id`)
+   - `content` (text)
+   - `created_at` (timestamp)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Setup
 
-## Deploy on Vercel
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env.local` file in the root directory with your Supabase credentials:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Usage
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Home Page**: Navigate to `/` to view all projects and create new ones.
+- **Project Detail Page**: Click on a project to view its progress logs and add new logs.
+
+## Additional Features
+
+- **Timeline View**: (Optional) A chronological view of progress logs.
+- **Analytics**: (Optional) Basic analytics like the number of logs per project.
+
+## License
+
+MIT
