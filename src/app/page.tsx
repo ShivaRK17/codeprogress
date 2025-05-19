@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
-import { Plus, Calendar, ArrowRight, Trash2, Edit2 } from 'lucide-react';
+import { Calendar, ArrowRight, Trash2, Edit2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -28,6 +28,7 @@ export default function Home() {
   const [editTags, setEditTags] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showMyProjectsOnly, setShowMyProjectsOnly] = useState(false);
 
