@@ -88,7 +88,8 @@ export default function CalendarPage() {
         }));
         
         setLogs(typedLogs);
-      } catch (err: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
         console.error('Error fetching logs:', err);
         setError(err.message);
       } finally {

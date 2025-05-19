@@ -34,6 +34,7 @@ export default function AuthPage() {
       } else {
         await signIn(email, password);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Auth error:', error);
       if (error.message === 'Invalid login credentials') {
