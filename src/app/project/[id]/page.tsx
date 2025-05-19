@@ -11,6 +11,7 @@ interface Project {
   title: string;
   created_at: string;
   user_id: string;
+  tags: string[];
   profiles: {
     full_name: string;
   };
@@ -155,7 +156,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           Back to Projects
         </Link>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.title}</h1>
-        <div className="flex items-center text-sm text-gray-500">
+        <div className="flex items-center text-sm text-gray-500 mb-4">
           <Calendar className="w-4 h-4 mr-2" />
           <time dateTime={project.created_at}>
             Created {new Date(project.created_at).toLocaleDateString()}
@@ -163,6 +164,18 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
           <span className="mx-2">•</span>
           <span>By {project.profiles?.full_name || 'Anonymous'}</span>
         </div>
+        {project.tags && project.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {project.tags.map(tag => (
+              <span
+                key={tag}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {user ? (
