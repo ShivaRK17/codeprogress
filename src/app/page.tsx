@@ -28,8 +28,6 @@ export default function Home() {
   const [editTags, setEditTags] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showMyProjectsOnly, setShowMyProjectsOnly] = useState(false);
 
   useEffect(() => {
@@ -158,10 +156,8 @@ export default function Home() {
   // Filter projects based on search query, selected tags, and my projects filter
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTags = selectedTags.length === 0 ||
-      selectedTags.every(tag => project.tags?.includes(tag));
     const matchesMyProjects = !showMyProjectsOnly || project.user_id === user?.id;
-    return matchesSearch && matchesTags && matchesMyProjects;
+    return matchesSearch && matchesMyProjects;
   });
 
   return (
