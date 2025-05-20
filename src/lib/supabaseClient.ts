@@ -18,15 +18,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Test the connection
-supabase.from('projects').select('count').then(
-  ({ data, error }) => {
-    if (error) {
-      console.error('Supabase connection test failed:', error);
-    } else {
-      console.log('Supabase connection test successful:', data);
-    }
-  }
-);
+// supabase.from('projects').select('count').then(
+//   ({ data, error }) => {
+//     if (error) {
+//       console.error('Supabase connection test failed:', error);
+//     } else {
+//       console.log('Supabase connection test successful:', data);
+//     }
+//   }
+// );
 
 export type User = {
   id: string;

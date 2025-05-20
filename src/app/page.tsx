@@ -12,6 +12,8 @@ interface Project {
   created_at: string;
   user_id: string;
   tags: string[];
+  github_url: string | null;
+  project_url: string | null;
   profiles: {
     full_name: string;
   };
@@ -22,10 +24,14 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectTitle, setNewProjectTitle] = useState('');
   const [newProjectTags, setNewProjectTags] = useState<string[]>([]);
+  const [newProjectGithubUrl, setNewProjectGithubUrl] = useState('');
+  const [newProjectUrl, setNewProjectUrl] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
+  const [editGithubUrl, setEditGithubUrl] = useState('');
+  const [editProjectUrl, setEditProjectUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showMyProjectsOnly, setShowMyProjectsOnly] = useState(false);
@@ -41,17 +47,17 @@ export default function Home() {
       console.log('Fetching projects...');
 
       // First, test the connection
-      const { data: testData, error: testError } = await supabase
-        .from('projects')
-        .select('count');
+      // const { data: testData, error: testError } = await supabase
+      //   .from('projects')
+      //   .select('count');
 
-      if (testError) {
-        console.error('Connection test failed:', testError);
-        setError(`Connection test failed: ${testError.message}`);
-        return;
-      }
+      // if (testError) {
+      //   console.error('Connection test failed:', testError);
+      //   setError(`Connection test failed: ${testError.message}`);
+      //   return;
+      // }
 
-      console.log('Connection test successful:', testData);
+      // console.log('Connection test successful:', testData);
 
       // Now fetch the actual projects
       const { data, error } = await supabase
@@ -92,7 +98,9 @@ export default function Home() {
         .insert([{
           title: newProjectTitle,
           user_id: user.id,
-          tags: newProjectTags
+          tags: newProjectTags,
+          github_url: newProjectGithubUrl.trim() || null,
+          project_url: newProjectUrl.trim() || null
         }])
         .select(`
           *,
@@ -106,6 +114,8 @@ export default function Home() {
         setProjects([...(data || []), ...projects]);
         setNewProjectTitle('');
         setNewProjectTags([]);
+        setNewProjectGithubUrl('');
+        setNewProjectUrl('');
       }
     } catch (err) {
       console.error('Unexpected error creating project:', err);
@@ -132,24 +142,34 @@ export default function Home() {
 
   async function updateProject(projectId: string) {
     if (!editTitle.trim()) return;
-
+    
     const { error } = await supabase
-      .from('projects')
-      .update({
-        title: editTitle,
-        tags: editTags
-      })
-      .eq('id', projectId);
-
+    .from('projects')
+    .update({
+      title: editTitle,
+      tags: editTags,
+      github_url: editGithubUrl.trim() || null,
+      project_url: editProjectUrl.trim() || null
+    })
+    .eq('id', projectId);
+    
     if (error) {
       console.error('Error updating project:', error);
     } else {
       setProjects(projects.map(p =>
-        p.id === projectId ? { ...p, title: editTitle, tags: editTags } : p
+        p.id === projectId ? { 
+          ...p, 
+          title: editTitle, 
+          tags: editTags,
+          github_url: editGithubUrl.trim() || null,
+          project_url: editProjectUrl.trim() || null
+        } : p
       ));
       setEditingProject(null);
       setEditTitle('');
       setEditTags([]);
+      setEditGithubUrl('');
+      setEditProjectUrl('');
     }
   }
 
@@ -179,23 +199,6 @@ export default function Home() {
           )}
 
           {user ? (
-            // <div className="flex gap-4">
-            //   <input
-            //     type="text"
-            //     value={newProjectTitle}
-            //     onChange={(e) => setNewProjectTitle(e.target.value)}
-            //     placeholder="Enter project name"
-            //     className="flex-1 border text-black border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            //   />
-            //   <button
-            //     onClick={createProject}
-            //     disabled={isCreating}
-            //     className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50"
-            //   >
-            //     <Plus className="w-5 h-5" />
-            //     {isCreating ? 'Creating...' : 'Create Project'}
-            //   </button>
-            // </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Create New Project</h2>
               <div className="space-y-4">
@@ -206,6 +209,24 @@ export default function Home() {
                   placeholder="Project title"
                   className="w-full text-black border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+
+                {/* URLs Input */}
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    value={newProjectGithubUrl}
+                    onChange={(e) => setNewProjectGithubUrl(e.target.value)}
+                    placeholder="GitHub URL (optional)"
+                    className="w-full text-black border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <input
+                    type="url"
+                    value={newProjectUrl}
+                    onChange={(e) => setNewProjectUrl(e.target.value)}
+                    placeholder="Project URL (optional)"
+                    className="w-full text-black border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
 
                 {/* Tags Input */}
                 <div className="space-y-2">
@@ -283,7 +304,7 @@ export default function Home() {
               className="flex-1 text-black border border-gray-200 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <div className="flex items-center gap-3 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+          {user && <div className="flex items-center gap-3 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
             <input
               type="checkbox"
               id="myProjects"
@@ -297,14 +318,12 @@ export default function Home() {
             >
               My Projects
             </label>
-          </div>
+          </div>}
 
 
           {/* Tags Filter */}
 
         </div>
-
-        {/* Create Project Form */}
 
         {/* Projects List */}
         {filteredProjects.length === 0 ? (
@@ -325,6 +344,20 @@ export default function Home() {
                           onChange={(e) => setEditTitle(e.target.value)}
                           className="w-full border text-blue-800 border-gray-200 rounded px-2 py-1"
                           autoFocus
+                        />
+                        <input
+                          type="url"
+                          value={editGithubUrl}
+                          onChange={(e) => setEditGithubUrl(e.target.value)}
+                          placeholder="GitHub URL (optional)"
+                          className="w-full border text-blue-800 border-gray-200 rounded px-2 py-1"
+                        />
+                        <input
+                          type="url"
+                          value={editProjectUrl}
+                          onChange={(e) => setEditProjectUrl(e.target.value)}
+                          placeholder="Project URL (optional)"
+                          className="w-full border text-blue-800 border-gray-200 rounded px-2 py-1"
                         />
                         <div className="flex flex-wrap gap-2">
                           {editTags.map(tag => (
@@ -360,21 +393,49 @@ export default function Home() {
                         </div>
                       </div>
                     ) : (
-                      <Link href={`/project/${project.id}`} className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {project.title}
-                        </h3>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {project.tags?.map(tag => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-gray-100 text-gray-700"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </Link>
+                      <div className="flex-1">
+                        <Link href={`/project/${project.id}`} className="block">
+                          <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {project.title}
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {project.tags?.map(tag => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-gray-100 text-gray-700"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </Link>
+                        {(project.github_url || project.project_url) && (
+                          <div className="mt-2 flex gap-2">
+                            {project.github_url && (
+                              <a
+                                href={project.github_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm underline text-blue-600 hover:text-blue-800"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                GitHub
+                              </a>
+                            )}
+                            {project.project_url && (
+                              <a
+                                href={project.project_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm underline text-blue-600 hover:text-blue-800"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Live Demo
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                     <div className="flex items-center gap-2">
                       {user?.id === project.user_id && (
@@ -392,6 +453,8 @@ export default function Home() {
                                 setEditingProject(project);
                                 setEditTitle(project.title);
                                 setEditTags(project.tags || []);
+                                setEditGithubUrl(project.github_url || '');
+                                setEditProjectUrl(project.project_url || '');
                               }}
                               className="text-gray-400 hover:text-gray-600"
                             >
